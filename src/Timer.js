@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw, Settings, X } from 'lucide-react';
 
-// onModeChange ve onRunningChange propslarını buraya ekledik ki App.js ile konuşabilsin
 const Timer = ({ onModeChange, onRunningChange }) => {
   const [minutes, setMinutes] = useState(25);
   const [seconds, setSeconds] = useState(0);
@@ -15,6 +14,11 @@ const Timer = ({ onModeChange, onRunningChange }) => {
     long: 15
   });
 
+  const playSound = (url) => {
+    const audio = new Audio(url);
+    audio.play().catch(e => {});
+  };
+
   useEffect(() => {
     let interval = null;
     if (isActive) {
@@ -24,39 +28,45 @@ const Timer = ({ onModeChange, onRunningChange }) => {
           setMinutes(minutes - 1);
           setSeconds(59);
         } else {
-          // --- SÜRE BİTTİĞİNDE BURASI ÇALIŞIR ---
-          // 1. Ses Çal
-          const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-          audio.play().catch(e => console.log("Ses engellendi"));
+          // --- SÜRE BİTTİĞİNDE OTOMATİK GEÇİŞ ---
+          playSound("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+          
+          let nextMode;
+          if (mode === 'pomodoro') {
+            nextMode = 'short'; // Odaklanma bittiyse molaya geç
+          } else {
+            nextMode = 'pomodoro'; // Mola bittiyse odaklanmaya dön
+          }
 
-          // 2. Durdur
-          setIsActive(false);
-          if (onRunningChange) onRunningChange(false);
-
-          // 3. Bildirim Göster
-          alert(mode === 'pomodoro' ? "Odaklanma bitti, mola zamanı!" : "Mola bitti, haydi iş başına!");
-          clearInterval(interval);
+          // Yeni modu ayarla
+          setMode(nextMode);
+          setMinutes(settings[nextMode]);
+          setSeconds(0);
+          
+          // App.js'e haber ver (Müzik çalar için)
+          if (onModeChange) onModeChange(nextMode === 'pomodoro' ? 'work' : 'break');
+          
+          // alert kaldırıldı çünkü döngüyü bozuyor, sadece ses ve geçiş kalmalı
         }
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isActive, seconds, minutes, mode, onRunningChange]);
+  }, [isActive, seconds, minutes, mode, settings, onModeChange]);
 
   const changeMode = (newMode) => {
+    playSound("https://actions.google.com/sounds/v1/ui/click_v0.ogg");
     setMode(newMode);
     setMinutes(settings[newMode]);
     setSeconds(0);
     setIsActive(false);
-    // App.js'e modun değiştiğini fısılda
     if (onModeChange) onModeChange(newMode === 'pomodoro' ? 'work' : 'break');
     if (onRunningChange) onRunningChange(false);
   };
 
   const toggleTimer = () => {
-    const nextActive = !isActive;
-    setIsActive(nextActive);
-    // App.js'e başladığını veya durduğunu bildir
-    if (onRunningChange) onRunningChange(nextActive);
+    playSound("https://actions.google.com/sounds/v1/ui/simple_click.ogg");
+    setIsActive(!isActive);
+    if (onRunningChange) onRunningChange(!isActive);
   };
 
   return (
@@ -69,14 +79,9 @@ const Timer = ({ onModeChange, onRunningChange }) => {
             key={m}
             onClick={() => changeMode(m)}
             style={{
-              padding: '10px 25px',
-              borderRadius: '30px',
-              border: 'none',
+              padding: '10px 25px', borderRadius: '30px', border: 'none',
               backgroundColor: mode === m ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.1)',
-              color: mode === m ? '#000' : '#fff',
-              fontWeight: '600',
-              cursor: 'pointer',
-              backdropFilter: 'blur(5px)'
+              color: mode === m ? '#000' : '#fff', fontWeight: '600', cursor: 'pointer', backdropFilter: 'blur(5px)'
             }}
           >
             {m === 'pomodoro' ? 'odaklan' : m === 'short' ? 'kısa ara' : 'uzun ara'}
