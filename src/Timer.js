@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw, Settings, X } from 'lucide-react';
 
-const Timer = () => {
+// onModeChange ve onRunningChange propslarını buraya ekledik ki App.js ile konuşabilsin
+const Timer = ({ onModeChange, onRunningChange }) => {
   const [minutes, setMinutes] = useState(25);
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState('pomodoro');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false); // Ayar penceresi kontrolü
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Süreleri burada tutuyoruz ki ayarlardan değiştirebilelim
   const [settings, setSettings] = useState({
     pomodoro: 25,
     short: 5,
@@ -23,17 +23,40 @@ const Timer = () => {
         else if (minutes > 0) {
           setMinutes(minutes - 1);
           setSeconds(59);
+        } else {
+          // --- SÜRE BİTTİĞİNDE BURASI ÇALIŞIR ---
+          // 1. Ses Çal
+          const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+          audio.play().catch(e => console.log("Ses engellendi"));
+
+          // 2. Durdur
+          setIsActive(false);
+          if (onRunningChange) onRunningChange(false);
+
+          // 3. Bildirim Göster
+          alert(mode === 'pomodoro' ? "Odaklanma bitti, mola zamanı!" : "Mola bitti, haydi iş başına!");
+          clearInterval(interval);
         }
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isActive, seconds, minutes]);
+  }, [isActive, seconds, minutes, mode, onRunningChange]);
 
   const changeMode = (newMode) => {
     setMode(newMode);
     setMinutes(settings[newMode]);
     setSeconds(0);
     setIsActive(false);
+    // App.js'e modun değiştiğini fısılda
+    if (onModeChange) onModeChange(newMode === 'pomodoro' ? 'work' : 'break');
+    if (onRunningChange) onRunningChange(false);
+  };
+
+  const toggleTimer = () => {
+    const nextActive = !isActive;
+    setIsActive(nextActive);
+    // App.js'e başladığını veya durduğunu bildir
+    if (onRunningChange) onRunningChange(nextActive);
   };
 
   return (
@@ -69,26 +92,26 @@ const Timer = () => {
       {/* KONTROLLER */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '40px', marginTop: '20px' }}>
         <button 
-          onClick={() => setIsActive(!isActive)}
+          onClick={toggleTimer}
           style={{ padding: '18px 60px', borderRadius: '50px', border: 'none', backgroundColor: 'white', color: 'black', fontSize: '1.6rem', fontWeight: '800', cursor: 'pointer' }}
         >
           {isActive ? 'durdur' : 'başlangıç'}
         </button>
         
-        <RotateCcw size={35} cursor="pointer" onClick={() => {setIsActive(false); setMinutes(settings[mode]); setSeconds(0);}} />
+        <RotateCcw size={35} cursor="pointer" onClick={() => {setIsActive(false); setMinutes(settings[mode]); setSeconds(0); if(onRunningChange) onRunningChange(false);}} />
         <Settings size={35} cursor="pointer" onClick={() => setIsSettingsOpen(true)} />
       </div>
 
-      {/* AYARLAR MODALI (Gelişmiş Özellik) */}
+      {/* AYARLAR MODALI */}
       {isSettingsOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
-          <div className="glass" style={{ padding: '40px', borderRadius: '30px', width: '350px', position: 'relative' }}>
+          <div className="glass" style={{ padding: '40px', borderRadius: '30px', width: '350px', position: 'relative', background: 'rgba(30,30,30,0.9)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)' }}>
             <X size={24} style={{ position: 'absolute', top: '20px', right: '20px', cursor: 'pointer' }} onClick={() => setIsSettingsOpen(false)} />
             <h2 style={{ marginBottom: '30px' }}>Süre Ayarları</h2>
             
             {['pomodoro', 'short', 'long'].map(type => (
               <div key={type} style={{ marginBottom: '20px', textAlign: 'left' }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', opacity: 0.7, marginBottom: '5px' }}>{type} (dakika)</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', opacity: 0.7, marginBottom: '5px' }}>{type === 'pomodoro' ? 'Odaklan' : type === 'short' ? 'Kısa Ara' : 'Uzun Ara'} (dk)</label>
                 <input 
                   type="number" 
                   value={settings[type]} 
@@ -99,7 +122,7 @@ const Timer = () => {
             ))}
             <button 
               onClick={() => { setIsSettingsOpen(false); setMinutes(settings[mode]); }}
-              style={{ width: '100%', padding: '15px', borderRadius: '15px', border: 'none', backgroundColor: '#9333ea', color: 'white', fontWeight: 'bold', marginTop: '10px' }}
+              style={{ width: '100%', padding: '15px', borderRadius: '15px', border: 'none', backgroundColor: '#9333ea', color: 'white', fontWeight: 'bold', marginTop: '10px', cursor: 'pointer' }}
             >
               Kaydet
             </button>
