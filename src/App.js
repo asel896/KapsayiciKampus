@@ -9,10 +9,8 @@ import { Menu, X } from 'lucide-react';
 function App() {
   const [notification, setNotification] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // Varsayılan arka plan (Paris Cafe)
   const [bgImage, setBgImage] = useState('https://images.unsplash.com/photo-1517816743773-6e0fd518b4a6?q=80&w=2070');
 
-  // Arkadaşlara mesaj gönderme fonksiyonu
   const handleSendMessage = (name) => {
     setNotification(`${name} kişisine motive edici bir mesaj gönderildi! 🚀`);
     setTimeout(() => setNotification(""), 3000);
@@ -20,114 +18,64 @@ function App() {
 
   return (
     <div style={{
-      height: '100vh', 
-      width: '100vw',
-      // Arka plan resmi dinamik olarak bgImage state'inden geliyor
+      height: '100vh', width: '100vw',
       backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${bgImage}')`,
-      backgroundSize: 'cover', 
-      backgroundPosition: 'center',
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      color: 'white', 
-      fontFamily: "'Poppins', sans-serif", 
-      position: 'relative', 
-      overflow: 'hidden',
-      transition: 'background-image 0.8s ease-in-out' // Arka plan geçiş efekti
+      backgroundSize: 'cover', backgroundPosition: 'center',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      color: 'white', fontFamily: "'Poppins', sans-serif", position: 'relative', overflow: 'hidden',
+      transition: 'background-image 0.8s ease-in-out'
     }}>
       
-      {/* SOL ÜST: HAMBURGER MENÜ BUTONU */}
+      {/* SOL ÜST HAMBURGER */}
       <button 
         onClick={() => setIsMenuOpen(true)}
         style={{ 
-          position: 'absolute', 
-          top: '30px', 
-          left: '30px', 
-          background: 'rgba(255,255,255,0.1)', 
-          border: '1px solid rgba(255,255,255,0.2)', 
-          padding: '12px', 
-          borderRadius: '15px', 
-          cursor: 'pointer', 
-          color: 'white', 
-          zIndex: 10,
-          transition: 'all 0.3s ease'
+          position: 'absolute', top: '30px', left: '30px', 
+          background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', 
+          padding: '12px', borderRadius: '15px', cursor: 'pointer', color: 'white', zIndex: 10 
         }}
       >
         <Menu size={28} />
       </button>
 
-      {/* SOL YAN MENÜ PANELİ */}
+      {/* SOL YAN PANEL */}
       <div style={{
-        position: 'fixed', 
-        top: 0, 
-        left: isMenuOpen ? '0' : '-450px',
-        width: '400px', 
-        height: '100vh', 
-        background: 'rgba(15, 15, 15, 0.85)',
-        backdropFilter: 'blur(25px)', 
-        zIndex: 100, 
-        transition: 'left 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-        padding: '40px 25px', 
-        overflowY: 'auto',
-        borderRight: '1px solid rgba(255,255,255,0.1)'
+        position: 'fixed', top: 0, left: isMenuOpen ? '0' : '-450px',
+        width: '400px', height: '100vh', background: 'rgba(15, 15, 15, 0.85)',
+        backdropFilter: 'blur(25px)', zIndex: 100, transition: 'left 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+        padding: '40px 25px', overflowY: 'auto', borderRight: '1px solid rgba(255,255,255,0.1)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <h2 style={{ margin: 0, fontWeight: '800' }}>kampüs<span style={{color: '#a855f7'}}>paneli</span></h2>
-          <button 
-            onClick={() => setIsMenuOpen(false)} 
-            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
-          >
+          <h2 style={{ margin: 0 }}>kampüs<span style={{color: '#a855f7'}}>paneli</span></h2>
+          <button onClick={() => setIsMenuOpen(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
             <X size={32} />
           </button>
         </div>
-        
-        {/* Panel İçeriği */}
         <TodoList />
         <div style={{ marginTop: '30px' }}>
           <FriendList onSendMessage={handleSendMessage} />
         </div>
       </div>
 
-      {/* ANA EKRAN: TIMER BÖLÜMÜ */}
+      {/* ANA TIMER */}
       <div style={{ zIndex: 2, textAlign: 'center' }}>
-        <div style={{ 
-          fontSize: '1.2rem', 
-          fontWeight: '300', 
-          marginBottom: '10px', 
-          opacity: 0.7, 
-          letterSpacing: '4px',
-          textTransform: 'uppercase'
-        }}>
-          kapsayıcı kampüs
+        <div style={{ fontSize: '1.2rem', fontWeight: '300', marginBottom: '10px', opacity: 0.7, letterSpacing: '4px' }}>
+          KAPSAYICI KAMPÜS
         </div>
         <Timer />
       </div>
 
-      {/* SOL ALT: MÜZİK ÇALAR */}
       <MusicPlayer />
-
-      {/* SAĞ ALT: ARKA PLAN DEĞİŞTİRİCİ */}
       <BackgroundSelector onSelect={(url) => setBgImage(url)} />
 
-      {/* BİLDİRİM SİSTEMİ */}
       {notification && (
         <div style={{ 
-          position: 'fixed', 
-          bottom: '30px', 
-          left: '50%',
-          transform: 'translateX(-50%)',
-          backgroundColor: '#a855f7', 
-          padding: '12px 25px', 
-          borderRadius: '15px', 
-          zIndex: 999,
-          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-          animation: 'fadeIn 0.5s ease'
+          position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
+          backgroundColor: '#a855f7', padding: '12px 25px', borderRadius: '15px', zIndex: 999 
         }}>
           {notification}
         </div>
       )}
-
     </div>
   );
 }
