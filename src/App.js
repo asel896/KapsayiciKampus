@@ -5,6 +5,10 @@ import TodoList from './TodoList';
 import MusicPlayer from './MusicPlayer';
 import BackgroundSelector from './BackgroundSelector';
 import { Menu, X } from 'lucide-react';
+import logo from './logo.png'; 
+
+// ... bileşen kodun içinde:
+<img src={logo} alt="Kampüs Paneli Logo" style={{ width: '40px', height: '40px' }} />
 
 function App() {
   const [notification, setNotification] = useState("");
