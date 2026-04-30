@@ -14,13 +14,14 @@ app.get('/test', async (req, res) => {
 
 // GET - Tüm Görevleri Getir
 app.get('/todos', async (req, res) => {
-    try {
-        const allTodos = await pool.query("SELECT * FROM todos ORDER BY id DESC");
-        res.json(allTodos.rows);
-    } catch (err) {
-        console.error("GET Hatası:", err.message);
-        res.status(500).send("Sunucu hatası");
-    }
+  try {
+    // "ORDER BY id DESC" eklendi: Büyük ID'li (yeni) olanlar önce gelir
+    const allTodos = await pool.query("SELECT * FROM todos ORDER BY id DESC");
+    res.json(allTodos.rows);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Sunucu hatası");
+  }
 });
 
 // POST - Yeni Görev Ekle

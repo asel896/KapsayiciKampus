@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle, Circle, Flag, BookOpen, Zap, Star, Target } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, Circle, BookOpen, Zap, Star, Target, Search } from 'lucide-react';
 
 /* ─── CONSTANTS ──────────────────────────────────────────────── */
 const CATEGORIES = [
@@ -42,10 +42,8 @@ const TaskItem = ({ task, onToggle, onDelete, accent }) => {
       opacity: removing ? 0 : task.completed ? 0.55 : 1,
       transform: removing ? 'translateX(12px) scale(0.97)' : 'none',
     }}>
-      {/* priority stripe */}
       <div style={{ width: 3, height: 28, borderRadius: 2, background: task.completed ? 'rgba(255,255,255,0.1)' : pColor, flexShrink: 0, transition: 'background .3s' }} />
 
-      {/* check */}
       <button
         onClick={() => onToggle(task.id)}
         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0, color: task.completed ? accent : 'rgba(255,255,255,0.25)', transition: 'color .2s' }}
@@ -56,7 +54,6 @@ const TaskItem = ({ task, onToggle, onDelete, accent }) => {
         }
       </button>
 
-      {/* text */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <span style={{
           fontSize: 13, fontWeight: task.completed ? 400 : 500,
@@ -72,7 +69,6 @@ const TaskItem = ({ task, onToggle, onDelete, accent }) => {
         </span>
       </div>
 
-      {/* delete */}
       <button
         onClick={handleDelete}
         style={{
@@ -90,41 +86,93 @@ const TaskItem = ({ task, onToggle, onDelete, accent }) => {
 
 /* ─── MAIN ───────────────────────────────────────────────────── */
 const TodoList = ({ accent = '#60a5fa' }) => {
-  const [tasks,       setTasks]    = useState([
-    { id: 1, text: 'Türev konusunu bitir', category: 'study', priority: 'high',   completed: false },
-    { id: 2, text: 'Haftalık özet çıkar',  category: 'goal',  priority: 'medium', completed: false },
-    { id: 3, text: 'Lab raporunu teslim et', category: 'task', priority: 'high',  completed: true  },
-  ]);
-  const [input,       setInput]    = useState('');
-  const [category,    setCategory] = useState('study');
-  const [priority,    setPriority] = useState('medium');
-  const [filter,      setFilter]   = useState('all');
-  const [adding,      setAdding]   = useState(false);
+  const [tasks, setTasks] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [input, setInput] = useState('');
+  const [category, setCategory] = useState('study');
+  const [priority, setPriority] = useState('medium');
+  const [filter, setFilter] = useState('all');
+  const [adding, setAdding] = useState(false);
   const inputRef = useRef(null);
 
-  const total     = tasks.length;
-  const done      = tasks.filter(t => t.completed).length;
-  const progress  = total > 0 ? Math.round((done / total) * 100) : 0;
+  // 1. Görevleri Çek
+  useEffect(() => {
+    fetch('http://localhost:5000/todos')
+      .then(res => res.json())
+      .then(data => setTasks(data))
+      .catch(err => console.error("Yükleme hatası:", err));
+  }, []);
 
-  const filtered = filter === 'all'
-    ? tasks
-    : filter === 'done'
-    ? tasks.filter(t => t.completed)
-    : tasks.filter(t => !t.completed && t.category === filter);
-
-  const addTask = () => {
+  // 2. Görev Ekle
+  const addTask = async () => {
     if (!input.trim()) return;
-    const newTask = { id: Date.now(), text: input.trim(), category, priority, completed: false };
-    setTasks(prev => [newTask, ...prev]);
-    setInput('');
-    setAdding(false);
+    const newTask = { text: input.trim(), category, priority };
+
+    try {
+      const response = await fetch('http://localhost:5000/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTask)
+      });
+
+      if (response.ok) {
+        const saved = await response.json();
+        // Backend'den "ORDER BY id DESC" gelse bile anlık eklemede en başa koyuyoruz
+        setTasks(prev => [saved, ...prev]);
+        setInput('');
+        setAdding(false);
+      } else {
+        const errData = await response.json();
+        alert("Backend Hatası: " + errData.error);
+      }
+    } catch (err) {
+      console.error("Bağlantı Hatası:", err);
+      alert("Sunucuya bağlanılamadı.");
+    }
   };
 
-  const toggleTask  = (id) => setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-  const deleteTask  = (id) => setTasks(prev => prev.filter(t => t.id !== id));
-  const clearDone   = ()   => setTasks(prev => prev.filter(t => !t.completed));
+  // 3. Durum Güncelle
+  const toggleTask = async (id) => {
+    const task = tasks.find(t => t.id === id);
+    try {
+      const response = await fetch(`http://localhost:5000/todos/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: !task.completed })
+      });
+      if (response.ok) {
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // 4. Sil
+  const deleteTask = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:5000/todos/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        setTasks(prev => prev.filter(t => t.id !== id));
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  // Filtreleme ve Arama Mantığı (Birleştirildi)
+  const filtered = (filter === 'all' 
+    ? tasks 
+    : filter === 'done' 
+    ? tasks.filter(t => t.completed) 
+    : tasks.filter(t => !t.completed && t.category === filter)
+  ).filter(t => t.text.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  const clearDone = () => {
+    tasks.filter(t => t.completed).forEach(t => deleteTask(t.id));
+  };
 
   useEffect(() => { if (adding) inputRef.current?.focus(); }, [adding]);
+
+  const total = tasks.length;
+  const done = tasks.filter(t => t.completed).length;
+  const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
   return (
     <>
@@ -139,127 +187,54 @@ const TodoList = ({ accent = '#60a5fa' }) => {
         }
         @keyframes expandDown {
           from { opacity: 0; max-height: 0; }
-          to   { opacity: 1; max-height: 200px; }
+          to   { opacity: 1; max-height: 250px; }
         }
       `}</style>
 
       <div style={{
         width: '100%', fontFamily: "'DM Sans', sans-serif",
-        background: '#0f0f17',
-        border: '0.5px solid rgba(255,255,255,0.08)',
-        borderRadius: 20, overflow: 'hidden',
+        background: '#0f0f17', border: '0.5px solid rgba(255,255,255,0.08)', borderRadius: 20, overflow: 'hidden',
       }}>
-
-        {/* ── HEADER ── */}
+        {/* HEADER & PROGRESS */}
         <div style={{ padding: '16px 16px 14px', borderBottom: '0.5px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.01em' }}>
-                Odak Hedefleri
-              </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
-                {done} / {total} tamamlandı
-              </div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>Odak Hedefleri</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{done} / {total} tamamlandı</div>
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
               {done > 0 && (
-                <button onClick={clearDone} style={{
-                  padding: '5px 10px', borderRadius: 8, border: '0.5px solid rgba(248,113,113,0.25)',
-                  background: 'rgba(248,113,113,0.08)', color: '#fca5a5',
-                  fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                }}>
-                  Temizle
-                </button>
+                <button onClick={clearDone} style={{ padding: '5px 10px', borderRadius: 8, border: '0.5px solid rgba(248,113,113,0.25)', background: 'rgba(248,113,113,0.08)', color: '#fca5a5', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Temizle</button>
               )}
-              <button onClick={() => setAdding(a => !a)} style={{
-                width: 30, height: 30, borderRadius: 8, border: 'none',
-                background: adding ? `${accent}30` : `${accent}20`,
-                color: accent, cursor: 'pointer', fontSize: 18, fontWeight: 300,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all .2s',
-              }}>
-                {adding ? '−' : '+'}
-              </button>
+              <button onClick={() => setAdding(a => !a)} style={{ width: 30, height: 30, borderRadius: 8, border: 'none', background: adding ? `${accent}30` : `${accent}20`, color: accent, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{adding ? '−' : '+'}</button>
             </div>
           </div>
-
-          {/* PROGRESS BAR */}
           <div style={{ position: 'relative', height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-            <div style={{
-              position: 'absolute', left: 0, top: 0, bottom: 0,
-              width: `${progress}%`,
-              background: `linear-gradient(90deg, ${accent}, ${accent}bb)`,
-              borderRadius: 2, transition: 'width .5s cubic-bezier(.16,1,.3,1)',
-            }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
-            <span style={{ fontSize: 10, color: accent, fontWeight: 700 }}>{progress}%</span>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${progress}%`, background: `linear-gradient(90deg, ${accent}, ${accent}bb)`, borderRadius: 2, transition: 'width .5s' }} />
           </div>
         </div>
 
-        {/* ── ADD FORM ── */}
+        {/* ADD TASK FORM */}
         {adding && (
-          <div style={{
-            padding: '12px 14px',
-            borderBottom: '0.5px solid rgba(255,255,255,0.06)',
-            background: 'rgba(255,255,255,0.02)',
-            animation: 'expandDown .2s ease',
-          }}>
-            {/* text input */}
+          <div style={{ padding: '12px 14px', borderBottom: '0.5px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.01)', animation: 'expandDown .2s ease' }}>
             <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addTask()}
-                placeholder="Görev yaz..."
-                style={{
-                  flex: 1, padding: '9px 13px', borderRadius: 10,
-                  background: 'rgba(255,255,255,0.06)',
-                  border: `0.5px solid ${accent}44`,
-                  color: '#fff', fontSize: 13, outline: 'none',
-                }}
-              />
-              <button onClick={addTask} style={{
-                padding: '9px 16px', borderRadius: 10, border: 'none',
-                background: accent, color: '#000', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
-              }}>
-                <Plus size={15} /> Ekle
-              </button>
+              <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTask()} placeholder="Yeni bir hedef yaz..." style={{ flex: 1, padding: '9px 13px', borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: `0.5px solid ${accent}44`, color: '#fff', fontSize: 13, outline: 'none' }} />
+              <button onClick={addTask} style={{ padding: '9px 16px', borderRadius: 10, border: 'none', background: accent, color: '#000', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><Plus size={15} /> Ekle</button>
             </div>
-
-            {/* category + priority */}
             <div style={{ display: 'flex', gap: 8 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 5, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Kategori</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 5 }}>KATEGORİ</div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   {CATEGORIES.filter(c => c.id !== 'all').map(c => (
-                    <button key={c.id} onClick={() => setCategory(c.id)} style={{
-                      flex: 1, padding: '5px 0', borderRadius: 7, border: 'none', cursor: 'pointer',
-                      background: category === c.id ? `${CATEGORY_COLORS[c.id]}22` : 'rgba(255,255,255,0.04)',
-                      color: category === c.id ? CATEGORY_COLORS[c.id] : 'rgba(255,255,255,0.35)',
-                      fontSize: 10, fontWeight: 600, transition: 'all .15s',
-                      border: `0.5px solid ${category === c.id ? CATEGORY_COLORS[c.id] + '44' : 'transparent'}`,
-                    }}>
-                      {c.label}
-                    </button>
+                    <button key={c.id} onClick={() => setCategory(c.id)} style={{ flex: 1, padding: '5px 0', borderRadius: 7, border: 'none', cursor: 'pointer', background: category === c.id ? `${CATEGORY_COLORS[c.id]}22` : 'rgba(255,255,255,0.04)', color: category === c.id ? CATEGORY_COLORS[c.id] : 'rgba(255,255,255,0.35)', fontSize: 10, fontWeight: 600, border: `0.5px solid ${category === c.id ? CATEGORY_COLORS[c.id] + '44' : 'transparent'}` }}>{c.label}</button>
                   ))}
                 </div>
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 5, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Öncelik</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 5 }}>ÖNCELİK</div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   {PRIORITIES.map(p => (
-                    <button key={p.id} onClick={() => setPriority(p.id)} style={{
-                      flex: 1, padding: '5px 0', borderRadius: 7, border: 'none', cursor: 'pointer',
-                      background: priority === p.id ? `${p.color}22` : 'rgba(255,255,255,0.04)',
-                      color: priority === p.id ? p.color : 'rgba(255,255,255,0.35)',
-                      fontSize: 10, fontWeight: 600, transition: 'all .15s',
-                      border: `0.5px solid ${priority === p.id ? p.color + '44' : 'transparent'}`,
-                    }}>
-                      {p.label}
-                    </button>
+                    <button key={p.id} onClick={() => setPriority(p.id)} style={{ flex: 1, padding: '5px 0', borderRadius: 7, border: 'none', cursor: 'pointer', background: priority === p.id ? `${p.color}22` : 'rgba(255,255,255,0.04)', color: priority === p.id ? p.color : 'rgba(255,255,255,0.35)', fontSize: 10, fontWeight: 600, border: `0.5px solid ${priority === p.id ? p.color + '44' : 'transparent'}` }}>{p.label}</button>
                   ))}
                 </div>
               </div>
@@ -267,65 +242,46 @@ const TodoList = ({ accent = '#60a5fa' }) => {
           </div>
         )}
 
-        {/* ── FILTER TABS ── */}
-        <div style={{ padding: '10px 14px 6px', display: 'flex', gap: 4, overflowX: 'auto' }}>
-          {[
-            ...CATEGORIES,
-            { id: 'done', label: 'Bitti', icon: <CheckCircle size={13} /> },
-          ].map(c => (
-            <button key={c.id} onClick={() => setFilter(c.id)} style={{
-              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
-              padding: '5px 11px', borderRadius: 20, border: 'none', cursor: 'pointer',
-              background: filter === c.id ? `${accent}20` : 'rgba(255,255,255,0.04)',
-              color: filter === c.id ? accent : 'rgba(255,255,255,0.35)',
-              fontSize: 11, fontWeight: 600, transition: 'all .15s',
-              border: `0.5px solid ${filter === c.id ? accent + '44' : 'transparent'}`,
-            }}>
-              {c.icon} {c.label}
-            </button>
-          ))}
+        {/* SEARCH & FILTERS */}
+        <div style={{ padding: '10px 14px 6px' }}>
+          <div style={{ position: 'relative', marginBottom: 8 }}>
+            <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.2)' }} />
+            <input 
+              type="text" 
+              placeholder="Görevlerde ara..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: '100%', padding: '8px 12px 8px 32px', borderRadius: '10px',
+                background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.1)',
+                color: '#fff', fontSize: '12px', outline: 'none'
+              }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 4 }} className="todo-scroll">
+            {[...CATEGORIES, { id: 'done', label: 'Bitti', icon: <CheckCircle size={13} /> }].map(c => (
+              <button key={c.id} onClick={() => setFilter(c.id)} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', borderRadius: 20, border: 'none', cursor: 'pointer', background: filter === c.id ? `${accent}20` : 'rgba(255,255,255,0.04)', color: filter === c.id ? accent : 'rgba(255,255,255,0.35)', fontSize: 11, fontWeight: 600, border: `0.5px solid ${filter === c.id ? accent + '44' : 'transparent'}` }}>{c.icon} {c.label}</button>
+            ))}
+          </div>
         </div>
 
-        {/* ── TASK LIST ── */}
-        <div className="todo-scroll" style={{ padding: '8px 12px 14px', display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 320, overflowY: 'auto' }}>
+        {/* TASK LIST AREA */}
+        <div className="todo-scroll" style={{ padding: '4px 12px 14px', display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 300, overflowY: 'auto' }}>
           {filtered.length === 0 && (
-            <div style={{
-              textAlign: 'center', padding: '28px 0',
-              color: 'rgba(255,255,255,0.2)', fontSize: 13,
-            }}>
-              {filter === 'done' ? '✅ Henüz tamamlanan yok' : '📝 Görev ekle, odaklan!'}
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'rgba(255,255,255,0.2)' }}>
+              <div style={{ fontSize: '30px', marginBottom: '10px' }}>✨</div>
+              <div style={{ fontSize: '13px', fontWeight: 500, color: '#94a3b8' }}>
+                {searchTerm ? "Aradığın kriterde görev bulunamadı." : "Bugün yapılacak bir şey yok, harikasın!"}
+              </div>
+              {!searchTerm && <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.6 }}>Yeni bir hedef ekleyerek başlayabilirsin.</div>}
             </div>
           )}
           {filtered.map(t => (
-            <div key={t.id} style={{ animation: 'slideIn .25s cubic-bezier(.16,1,.3,1)' }}>
+            <div key={t.id} style={{ animation: 'slideIn .25s' }}>
               <TaskItem task={t} onToggle={toggleTask} onDelete={deleteTask} accent={accent} />
             </div>
           ))}
         </div>
-
-        {/* ── FOOTER SUMMARY ── */}
-        {total > 0 && (
-          <div style={{
-            padding: '10px 16px', borderTop: '0.5px solid rgba(255,255,255,0.05)',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <div style={{ display: 'flex', gap: 14 }}>
-              {PRIORITIES.map(p => {
-                const count = tasks.filter(t => t.priority === p.id && !t.completed).length;
-                if (!count) return null;
-                return (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Flag size={10} color={p.color} />
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{count}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
-              {total - done} bekliyor
-            </span>
-          </div>
-        )}
       </div>
     </>
   );
