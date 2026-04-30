@@ -9,21 +9,32 @@ import { Menu, X } from 'lucide-react';
 function App() {
   const [notification, setNotification] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [bgImage, setBgImage] = useState('https://images.unsplash.com/photo-1517816743773-6e0fd518b4a6?q=80&w=2070');
+  const [bgImage, setBgImage] = useState('https://images.unsplash.com/photo-1517816743773-6e0fd518b4a6?auto=format&fit=crop&q=80&w=1920');
 
   const handleSendMessage = (name) => {
     setNotification(`${name} kişisine motive edici bir mesaj gönderildi! 🚀`);
     setTimeout(() => setNotification(""), 3000);
   };
 
+  // Resim tamamen yüklenmeden arka planı değiştirmeyen fonksiyon
+  const handleBgChange = (url) => {
+    const img = new Image();
+    img.src = url;
+    img.onload = () => {
+      setBgImage(url);
+    };
+  };
+
   return (
     <div style={{
       height: '100vh', width: '100vw',
-      backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${bgImage}')`,
-      backgroundSize: 'cover', backgroundPosition: 'center',
+      // linear-gradient ve url arasındaki tırnakları kaldırdık
+      backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${bgImage})`,
+      backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       color: 'white', fontFamily: "'Poppins', sans-serif", position: 'relative', overflow: 'hidden',
-      transition: 'background-image 0.8s ease-in-out'
+      transition: 'background-image 0.6s ease-in-out',
+      backgroundColor: '#111' 
     }}>
       
       {/* SOL ÜST HAMBURGER */}
@@ -66,7 +77,9 @@ function App() {
       </div>
 
       <MusicPlayer />
-      <BackgroundSelector onSelect={(url) => setBgImage(url)} />
+      
+      {/* handleBgChange fonksiyonunu bağlıyoruz */}
+      <BackgroundSelector onSelect={handleBgChange} />
 
       {notification && (
         <div style={{ 

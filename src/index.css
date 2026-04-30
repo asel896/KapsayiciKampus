@@ -1,37 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
-
-body {
-  margin: 0;
-  font-family: 'Poppins', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  overflow: hidden; /* Sayfa kaymasın, tam ekran uygulama hissi */
-}
-
-/* Sayfa ilk açıldığında elemanların yavaşça gelmesi için */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade {
-  animation: fadeIn 0.8s ease-out forwards;
-}
-
-/* Cam Efekti (Glassmorphism) Standart Sınıfı */
-.glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-/* Butonlara hover efekti */
-button {
-  transition: all 0.3s ease !important;
-}
-
-button:hover {
-  transform: scale(1.05);
-  filter: brightness(1.2);
+/* Sayfanın tüm dış katmanlarını sıfırla */
+html, body, #root {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100vh !important;
 }
