@@ -5,22 +5,22 @@ import TodoList from './TodoList';
 import MusicPlayer from './MusicPlayer';
 import BackgroundSelector from './BackgroundSelector';
 import { Menu, X } from 'lucide-react';
+// Logo hatası alıyorsan bu satırı kontrol et veya dosya yoksa kaldır
 import logo from './logo.png'; 
-
-// ... bileşen kodun içinde:
-<img src={logo} alt="Kampüs Paneli Logo" style={{ width: '40px', height: '40px' }} />
 
 function App() {
   const [notification, setNotification] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [bgImage, setBgImage] = useState('https://images.unsplash.com/photo-1517816743773-6e0fd518b4a6?auto=format&fit=crop&q=80&w=1920');
+  
+  // EKSİK OLAN KISIM: Aktif görevi takip eden state
+  const [activeTodo, setActiveTodo] = useState(null);
 
   const handleSendMessage = (name) => {
     setNotification(`${name} kişisine motive edici bir mesaj gönderildi! 🚀`);
     setTimeout(() => setNotification(""), 3000);
   };
 
-  // Resim tamamen yüklenmeden arka planı değiştirmeyen fonksiyon
   const handleBgChange = (url) => {
     const img = new Image();
     img.src = url;
@@ -32,7 +32,6 @@ function App() {
   return (
     <div style={{
       height: '100vh', width: '100vw',
-      // linear-gradient ve url arasındaki tırnakları kaldırdık
       backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${bgImage})`,
       backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -61,12 +60,22 @@ function App() {
         padding: '40px 25px', overflowY: 'auto', borderRight: '1px solid rgba(255,255,255,0.1)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <h2 style={{ margin: 0 }}>kampüs<span style={{color: '#a855f7'}}>paneli</span></h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+             {/* Logo hatası almamak için src kontrolü önemli */}
+             <img src={logo} alt="Logo" style={{ width: '30px', height: '30px' }} />
+             <h2 style={{ margin: 0 }}>kampüs<span style={{color: '#a855f7'}}>paneli</span></h2>
+          </div>
           <button onClick={() => setIsMenuOpen(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
             <X size={32} />
           </button>
         </div>
-        <TodoList />
+
+        {/* GÜNCELLEME: TodoList'e props'ları gönderiyoruz */}
+        <TodoList 
+          activeTodo={activeTodo} 
+          setActiveTodo={setActiveTodo} 
+        />
+
         <div style={{ marginTop: '30px' }}>
           <FriendList onSendMessage={handleSendMessage} />
         </div>
@@ -77,12 +86,11 @@ function App() {
         <div style={{ fontSize: '1.2rem', fontWeight: '300', marginBottom: '10px', opacity: 0.7, letterSpacing: '4px' }}>
           KAPSAYICI KAMPÜS
         </div>
-        <Timer />
+        {/* GÜNCELLEME: Timer'a (Pomodoro) aktif görevi gönderiyoruz */}
+        <Timer activeTodo={activeTodo} />
       </div>
 
       <MusicPlayer />
-      
-      {/* handleBgChange fonksiyonunu bağlıyoruz */}
       <BackgroundSelector onSelect={handleBgChange} />
 
       {notification && (
