@@ -53,8 +53,11 @@ const Auth = ({ onLoginSuccess }) => {
           setPassword('');
         }
       } else {
-        if (data.detail && typeof data.detail === 'object') {
+        // FastAPI / Pydantic nesne hatalarını güvenli bir şekilde string'e çeviriyoruz
+        if (Array.isArray(data.detail)) {
           setError(data.detail[0]?.msg || 'Veri doğrulama hatası.');
+        } else if (data.detail && typeof data.detail === 'object') {
+          setError(data.detail.msg || 'Giriş başarısız.');
         } else if (typeof data.detail === 'string') {
           setError(data.detail);
         } else {
@@ -71,7 +74,7 @@ const Auth = ({ onLoginSuccess }) => {
     <div style={{
       height: '100vh', width: '100vw',
       backgroundColor: '#0f0f17',
-      display: 'flex', alignItems: 'center', center: 'center',
+      display: 'flex', alignItems: 'center',
       justifyContent: 'center', fontFamily: "'Poppins', sans-serif", color: '#fff'
     }}>
       <div style={{
@@ -136,7 +139,7 @@ const Auth = ({ onLoginSuccess }) => {
           {error && <div style={{ color: '#f87171', fontSize: '12px', textAlign: 'center', marginTop: '5px' }}>{error}</div>}
           {message && <div style={{ color: '#34d399', fontSize: '12px', textAlign: 'center', marginTop: '5px' }}>{message}</div>}
 
-          <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: '#a855f7', color: '#fff', fontWeight: 600, cursor: 'pointer', marginTop: '10px', transition: 'background 0.2s' }}>
+          <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: '#a855f7', color: '#fff', fontWeight: 600, cursor: 'pointer', marginTop: '10px' }}>
             {isLogin ? 'Giriş Yap' : 'Kayıt Ol'}
           </button>
         </form>

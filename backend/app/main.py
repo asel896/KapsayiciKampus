@@ -7,6 +7,7 @@ from typing import Optional
 from contextlib import asynccontextmanager
 import asyncpg
 from dotenv import load_dotenv
+from .llm_service import LLMService, ChatRequest
 
 
 load_dotenv()
@@ -147,3 +148,9 @@ async def delete_todo(todo_id: int):
     async with app.state.pool.acquire() as connection:
         await connection.execute("DELETE FROM todos WHERE id = $1", todo_id)
         return "Silindi"
+    
+# YAPAY ZEKA SOHBET ENDPOINT'İ
+@app.post("/api/ai-chat")
+async def handle_ai_chat(payload: ChatRequest):
+    reply_text = LLMService.generate_response(payload)
+    return {"reply": reply_text}

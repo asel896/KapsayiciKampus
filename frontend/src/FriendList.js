@@ -14,50 +14,6 @@ const STATUS_META = {
   idle: { label: 'Çevrimdışı', dot: '#64748b', bg: 'rgba(100,116,139,0.1)', text: '#94a3b8' },
 };
 
-// --- Birebir Akıllı Diyalog Motoru ---
-const generateSmartReply = (userMessage, friend, currentHistory = []) => {
-  const msg = userMessage.toLowerCase().trim();
-  if (friend.status === 'idle') return `Kusura bakma ya, şu an aktif değilim. Bilgisayar başına geçince yazayım sana. 📚`;
-
-  const botMessages = currentHistory.filter(h => h.from === 'them');
-  const botLastMsg = botMessages.length > 0 ? botMessages[botMessages.length - 1].text?.toLowerCase() || "" : "";
-
-  if (botLastMsg.includes('sen naptın') || botLastMsg.includes('nasıl gidiyor çalışmalar') || botLastMsg.includes('sende durumlar nasıl')) {
-    if (msg.includes('spor') || msg.includes('antreman') || msg.includes('gym') || msg.includes('koşu')) return `Ooo harika! Kolay gelsin, iyi sporlar. Ben ders başında çok oturdum, yerime de kalori yak! 💪🏋️‍♂️`;
-    if (msg.includes('dinlen') || msg.includes('otur') || msg.includes('boş') || msg.includes('takıl')) return `En iyisini yapıyorsun valla, kafa dinlemek lazım biraz. Hak ettin! 🙌`;
-    if (msg.includes('ders') || msg.includes('çalış') || msg.includes('ödev') || msg.includes('proje')) return `Kolay gelsin! Hangi derse bakıyorsun? Tempoyu düşürmeyelim, finallere az kaldı. 📚🔥`;
-    return `Anladım dostum, kolay gelsin sana da. Mola bitince tekrar derse kaçacağım zaten. 👍`;
-  }
-
-  if (msg.includes('mola') || msg.includes('kahve') || msg.includes('dinlen')) {
-    if (friend.status === 'focus') return `Şu an ${friend.subject} odağındayım, kronometremin bitmesine ${friend.remaining} var. Süre bitince kantinde buluşalım mı? ☕`;
-    return `Süper fikir! Filtre kahve mi içiyoruz Türk kahvesi mi? Ben ısmarlıyorum bu sefer. 😉`;
-  }
-
-  if (msg.includes('selam') || msg.includes('merhaba') || msg.includes('naber')) {
-    if (friend.status === 'focus') return `Selam! İyidir valla, kendimi ${friend.subject} çalışmaya gömdüm. Sende durumlar nasıl, verimli mi bugün? ✨`;
-    return `Selamlar! Mola verdim, telefonla oynuyordum tam. Nasıl gidiyor çalışmalar, bitirebildin mi ödevleri?`;
-  }
-
-  return `Anladım kanka, süper. Ben de buralardayım işte. Sonra yine haberleşiriz! 😊`;
-};
-
-// --- Grup Sohbeti Akıllı Yanıt Motoru ---
-const generateGroupReply = (userMessage) => {
-  const msg = userMessage.toLowerCase().trim();
-  if (msg.includes('selam') || msg.includes('merhaba') || msg.includes('tünaydın')) {
-    return { friendId: 1, text: "Aleykum selam! Hoş geldin gruba, kütüphane bugün aşırı dolu yer bulabildin mi?" };
-  }
-  if (msg.includes('kahve') || msg.includes('mola') || msg.includes('bıktım') || msg.includes('yoruldum')) {
-    return { friendId: 2, text: "Ben tam kantine iniyordum! Gelen varsa 5 dakikaya merdivenlerin oraya gelsin, beyin jimnastiğinden kafam şişti ☕" };
-  }
-  if (msg.includes('soru') || msg.includes('yardım') || msg.includes('anlamadım') || msg.includes('bakar mısınız')) {
-    return { friendId: 4, text: "Hangi ders kanka? At buraya hep birlikte bakalım, herkes bir ucundan tutar çözeriz hemen." };
-  }
-  const randomFriend = [1, 2, 4][Math.floor(Math.random() * 3)];
-  return { friendId: randomFriend, text: `Aynen öyle valla. Bu arada kütüphanenin Wi-Fi hızı yine yerlerde sürüyor... 📶` };
-};
-
 const uid = () => Math.random().toString(36).slice(2);
 const now = () => new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 
@@ -125,8 +81,7 @@ const StoryModal = ({ friend, onClose }) => {
   );
 };
 
-// --- Yenilenmiş ve Şov Efektli Ortak Chat Çekmecesi ---
-const ChatDrawer = ({ title, avatarComponent, onClose, accent, messages, onSendMessage, typingUser, placeholder }) => {
+const ChatDrawer = ({ title, avatarComponent, onClose, accent, messages, onSendMessage, typingUser, placeholder, onClearChat }) => {
   const [input, setInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = useRef(null);
@@ -176,10 +131,21 @@ const ChatDrawer = ({ title, avatarComponent, onClose, accent, messages, onSendM
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{title}</div>
           </div>
+          {onClearChat && (
+            <button 
+              onClick={() => {
+                if (window.confirm("Bu sohbet geçmişini temizlemek istediğinize emin misiniz?")) {
+                  onClearChat();
+                }
+              }}
+              style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '4px 8px', borderRadius: 4, marginRight: 4 }}
+            >
+              Temizle
+            </button>
+          )}
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: 4 }}><X size={18} /></button>
         </div>
 
-        {/* Mesaj Listesi Akışı */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: 10, scrollbarWidth: 'none' }}>
           {messages.map(m => (
             <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: m.from === 'me' ? 'flex-end' : 'flex-start' }}>
@@ -190,12 +156,10 @@ const ChatDrawer = ({ title, avatarComponent, onClose, accent, messages, onSendM
                 background: m.from === 'me' ? accent : 'rgba(255,255,255,0.06)',
                 color: m.from === 'me' ? '#000' : '#e2e8f0', fontSize: 13, fontWeight: 500, lineHeight: 1.4, overflow: 'hidden'
               }}>
-                {/* 1. SEÇENEK: GÖRSEL MESAJ BALONCUĞU */}
                 {m.msgType === 'image' && (
                   <img src={m.fileUrl} alt="Soru Resmi" style={{ width: '100%', maxHeight: 180, borderRadius: 12, objectFit: 'cover', display: 'block' }} />
                 )}
 
-                {/* 2. SEÇENEK: SAHTE SESLİ MESAJ BALONCUĞU */}
                 {m.msgType === 'audio' && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', minWidth: 140 }}>
                     <Volume2 size={16} color={m.from === 'me' ? '#000' : accent} />
@@ -208,7 +172,6 @@ const ChatDrawer = ({ title, avatarComponent, onClose, accent, messages, onSendM
                   </div>
                 )}
 
-                {/* 3. SEÇENEK: METİN MESAJI */}
                 {(!m.msgType || m.msgType === 'text') && m.text}
 
                 <div style={{ fontSize: 9, opacity: 0.5, marginTop: 4, textAlign: m.from === 'me' ? 'right' : 'left' }}>{m.time}</div>
@@ -216,7 +179,6 @@ const ChatDrawer = ({ title, avatarComponent, onClose, accent, messages, onSendM
             </div>
           ))}
 
-          {/* DİNAMİK YAZIYOR... GÖSTERGESİ */}
           {typingUser && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', animation: 'fadeIn 0.2s' }}>
               <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 2, marginLeft: 4 }}>{typingUser} yazıyor</span>
@@ -230,7 +192,6 @@ const ChatDrawer = ({ title, avatarComponent, onClose, accent, messages, onSendM
           <div ref={endRef} />
         </div>
 
-        {/* Alt Gönderim Giriş Alanı */}
         <div style={{ padding: '10px 12px 14px', display: 'flex', gap: 6, alignItems: 'center', background: 'rgba(255,255,255,0.01)' }}>
           <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" style={{ display: 'none' }} />
           
@@ -292,7 +253,6 @@ export default function FriendList({ accent = '#a855f7' }) {
   const [activeStory, setActiveStory] = useState(null);
   const [isGroupOpen, setIsGroupOpen] = useState(false);
   const [filter, setFilter] = useState('all');
-
   const [typingUser, setTypingUser] = useState(null);
 
   const [chatHistories, setChatHistories] = useState(() => {
@@ -312,67 +272,102 @@ export default function FriendList({ accent = '#a855f7' }) {
   useEffect(() => { localStorage.setItem('kampus_chat_histories', JSON.stringify(chatHistories)); }, [chatHistories]);
   useEffect(() => { localStorage.setItem('kampus_group_chat', JSON.stringify(groupMessages)); }, [groupMessages]);
 
-  // Birebir Mesaj Gönderme / Efektli
-  const handleSendMessage = (friendId, payload) => {
+  const handleSendMessage = async (friendId, payload) => {
     const currentFriend = friends.find(f => f.id === friendId);
     const newMsg = { id: uid(), from: 'me', text: payload.text, msgType: payload.type, fileUrl: payload.fileUrl, time: now() };
     const updated = [...(chatHistories[friendId] || []), newMsg];
 
     setChatHistories(prev => ({ ...prev, [friendId]: updated }));
 
-    // 1. Gecikme: 400ms sonra "Yazıyor..." ibaresini aç
-    setTimeout(() => {
-      setTypingUser(currentFriend.name);
-    }, 400);
+    setTimeout(() => { setTypingUser(currentFriend.name); }, 400);
 
-    // 2. Gecikme: 1600ms sonra yazıyor'u kapat ve yanıtı bas
-    setTimeout(() => {
+    try {
+      const res = await fetch('http://localhost:8000/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_message: payload.text || "Selam",
+          friend_name: currentFriend.name,
+          friend_status: currentFriend.status,
+          friend_subject: currentFriend.subject,
+          chat_history: chatHistories[friendId] || []
+        })
+      });
+      
+      const data = await res.json();
       setTypingUser(null);
-      let aiText = payload.type === 'image' ? "Ooo bu soru efsane duruyor kanka, kağıt kalem çıkarıp bakıyorum hemen! 🧠" : generateSmartReply(payload.text, currentFriend, updated);
-      if (payload.type === 'audio') aiText = "Ses kaydını dinledim kanka, kantine geçince detaylı konuşuruz o zaman. 👍";
-
       setChatHistories(latest => ({
         ...latest,
-        [friendId]: [...(latest[friendId] || []), { id: uid(), from: 'them', text: aiText, msgType: 'text', time: now() }]
+        [friendId]: [...(latest[friendId] || []), { id: uid(), from: 'them', text: data.reply, msgType: 'text', time: now() }]
       }));
-    }, 1800);
+
+    } catch (err) {
+      setTypingUser(null);
+      console.error("LLM Bağlantı Hatası:", err);
+      setChatHistories(latest => ({
+        ...latest,
+        [friendId]: [...(latest[friendId] || []), { id: uid(), from: 'them', text: "⚠️ Backend'e bağlanamadım! Sunucunun açık ve .env dosyanın dolu olduğunu kontrol et.", msgType: 'text', time: now() }]
+      }));
+    }
   };
 
-  // Grup Mesajı Gönderme / Efektli
-  const handleSendGroupMessage = (payload) => {
+  const handleSendGroupMessage = async (payload) => {
     const newMsg = { id: uid(), from: 'me', text: payload.text, msgType: payload.type, fileUrl: payload.fileUrl, time: now() };
     setGroupMessages(prev => [...prev, newMsg]);
 
-    const reply = generateGroupReply(payload.text || "");
-    const actor = friends.find(f => f.id === reply.friendId);
+    const groupActors = friends.filter(f => f.id !== 3); 
+    const actor = groupActors[Math.floor(Math.random() * groupActors.length)];
 
-    setTimeout(() => {
-      setTypingUser(actor.name);
-    }, 500);
+    setTimeout(() => { setTypingUser(actor.name); }, 500);
 
-    setTimeout(() => {
+    try {
+      const res = await fetch('http://localhost:8000/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_message: payload.text || "Selam grup",
+          friend_name: actor.name,
+          friend_status: actor.status,
+          friend_subject: actor.subject,
+          chat_history: groupMessages
+        })
+      });
+      
+      const data = await res.json();
       setTypingUser(null);
-      let aiText = payload.type === 'image' ? "Kimin sorusu bu? Zor duruyor valla kütüphanede çözen çıkmaz buna." : reply.text;
-      if (payload.type === 'audio') aiText = "Kanka sesin çok az geliyor kütüphanede dinleyemedim ne dedin?";
 
       const aiGroupMsg = {
         id: uid(),
         from: 'them',
         senderName: actor.name,
         senderColor: actor.avatarColor,
-        text: aiText,
+        text: data.reply,
         msgType: 'text',
         time: now()
       };
       setGroupMessages(prev => [...prev, aiGroupMsg]);
-    }, 1800);
+
+    } catch (err) {
+      setTypingUser(null);
+      console.error("Grup LLM Hatası:", err);
+    }
+  };
+
+  const handleClearPrivateChat = (friendId) => {
+    setChatHistories(prev => ({
+      ...prev,
+      [friendId]: []
+    }));
+  };
+
+  const handleClearGroupChat = () => {
+    setGroupMessages([]);
   };
 
   const filtered = filter === 'all' ? friends : friends.filter(f => f.status === filter);
 
   return (
     <>
-      {/* ŞOV VE ANİMASYON CSS KARTLARI */}
       <style>{`
         @keyframes pulseRing { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.4); } 50% { box-shadow: 0 0 0 5px rgba(34,197,94,0); } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
@@ -385,7 +380,6 @@ export default function FriendList({ accent = '#a855f7' }) {
 
       <div style={{ width: '100%', fontFamily: "'Poppins', sans-serif" }}>
         
-        {/* HİKAYELER (STORIES) BARI */}
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 12, marginBottom: 16, borderBottom: '0.5px solid rgba(255,255,255,0.06)', scrollbarWidth: 'none' }}>
           {friends.map(f => (
             <div key={f.id} onClick={() => setActiveStory(f)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, cursor: 'pointer', flexShrink: 0 }}>
@@ -400,7 +394,6 @@ export default function FriendList({ accent = '#a855f7' }) {
           ))}
         </div>
 
-        {/* Başlık ve Grup Odası Butonu */}
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14, justifyContent: 'space-between' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Sparkles size={14} color={accent} /> Kampüs Çapında Odak
@@ -415,11 +408,10 @@ export default function FriendList({ accent = '#a855f7' }) {
           </button>
         </div>
 
-        {/* Filtre Butonları */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
           {[ ['all', 'Tümü'], ['focus', '🔥 Odak'], ['break', '☕ Mola'] ].map(([val, label]) => (
             <button key={val} onClick={() => setFilter(val)} style={{
-              flex: 1, padding: '6px 0', borderRadius: 8, border: 'none',
+              flex: 1, padding: '6px 0', borderRadius: 8,
               background: filter === val ? 'rgba(255,255,255,0.06)' : 'transparent',
               color: filter === val ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 500, cursor: 'pointer',
               border: `0.5px solid ${filter === val ? 'rgba(255,255,255,0.1)' : 'transparent'}`
@@ -429,7 +421,6 @@ export default function FriendList({ accent = '#a855f7' }) {
           ))}
         </div>
 
-        {/* Liste */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto', scrollbarWidth: 'none' }}>
           {filtered.map(f => (
             <FriendCard key={f.id} friend={f} onChat={setChatFriend} onMotivate={(fr) => handleSendMessage(fr.id, { type: 'text', text: "🚀 Sana süper bir motivasyon enerjisi gönderiyorum! ⚡" })} accent={accent} />
@@ -437,10 +428,8 @@ export default function FriendList({ accent = '#a855f7' }) {
         </div>
       </div>
 
-      {/* Hikaye Modal */}
       {activeStory && <StoryModal friend={activeStory} onClose={() => setActiveStory(null)} />}
 
-      {/* Birebir Chat Çekmecesi */}
       {chatFriend && (
         <ChatDrawer
           title={chatFriend.name}
@@ -451,10 +440,10 @@ export default function FriendList({ accent = '#a855f7' }) {
           typingUser={typingUser === chatFriend.name ? chatFriend.name : null}
           onSendMessage={(payload) => handleSendMessage(chatFriend.id, payload)}
           placeholder={`${chatFriend.name} kişisine yaz...`}
+          onClearChat={() => handleClearPrivateChat(chatFriend.id)}
         />
       )}
 
-      {/* Kütüphane Grup Chat Çekmecesi */}
       {isGroupOpen && (
         <ChatDrawer
           title="Kütüphane 3. Kat Sakinleri 🏛️"
@@ -465,6 +454,7 @@ export default function FriendList({ accent = '#a855f7' }) {
           typingUser={typingUser && typingUser !== chatFriend?.name ? typingUser : null}
           onSendMessage={handleSendGroupMessage}
           placeholder="Gruba mesaj gönder..."
+          onClearChat={handleClearGroupChat}
         />
       )}
     </>
