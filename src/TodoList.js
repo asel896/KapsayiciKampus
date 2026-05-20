@@ -22,30 +22,36 @@ const CATEGORY_COLORS = {
 };
 
 /* ─── TASK ITEM ──────────────────────────────────────────────── */
-const TaskItem = ({ task, onToggle, onDelete, accent }) => {
+// isActive ve onSelect prop'ları eklendi
+const TaskItem = ({ task, onToggle, onDelete, accent, isActive, onSelect }) => {
   const [removing, setRemoving] = useState(false);
   const pColor = PRIORITIES.find(p => p.id === task.priority)?.color || accent;
   const cColor = CATEGORY_COLORS[task.category] || 'rgba(255,255,255,0.3)';
 
-  const handleDelete = () => {
+  const handleDelete = (e) => {
+    e.stopPropagation(); // Kartın tıklanma olayını (onSelect) tetiklemesin
     setRemoving(true);
     setTimeout(() => onDelete(task.id), 280);
   };
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 10,
-      padding: '10px 12px', borderRadius: 12,
-      background: task.completed ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.04)',
-      border: `0.5px solid ${task.completed ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.09)'}`,
-      transition: 'all .28s cubic-bezier(.16,1,.3,1)',
-      opacity: removing ? 0 : task.completed ? 0.55 : 1,
-      transform: removing ? 'translateX(12px) scale(0.97)' : 'none',
-    }}>
+    <div 
+      onClick={() => onSelect(task)} // Görevi aktif görev olarak seçer
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 12px', borderRadius: 12,
+        background: task.completed ? 'rgba(255,255,255,0.02)' : (isActive ? `${accent}15` : 'rgba(255,255,255,0.04)'),
+        border: `0.5px solid ${isActive ? accent : (task.completed ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.09)')}`,
+        transition: 'all .28s cubic-bezier(.16,1,.3,1)',
+        opacity: removing ? 0 : task.completed ? 0.55 : 1,
+        transform: removing ? 'translateX(12px) scale(0.97)' : 'none',
+        cursor: 'pointer', // Tıklanabilir olduğunu belli et
+        boxShadow: isActive ? `0 0 12px ${accent}22` : 'none',
+      }}>
       <div style={{ width: 3, height: 28, borderRadius: 2, background: task.completed ? 'rgba(255,255,255,0.1)' : pColor, flexShrink: 0, transition: 'background .3s' }} />
 
       <button
-        onClick={() => onToggle(task.id)}
+        onClick={(e) => { e.stopPropagation(); onToggle(task.id); }}
         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0, color: task.completed ? accent : 'rgba(255,255,255,0.25)', transition: 'color .2s' }}
       >
         {task.completed
@@ -85,7 +91,8 @@ const TaskItem = ({ task, onToggle, onDelete, accent }) => {
 };
 
 /* ─── MAIN ───────────────────────────────────────────────────── */
-const TodoList = ({ accent = '#60a5fa' }) => {
+// activeTodo ve setActiveTodo prop'ları ana fonksiyona eklendi
+const TodoList = ({ accent = '#60a5fa', activeTodo, setActiveTodo }) => {
   const [tasks, setTasks] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [input, setInput] = useState('');
@@ -117,7 +124,6 @@ const TodoList = ({ accent = '#60a5fa' }) => {
 
       if (response.ok) {
         const saved = await response.json();
-        // Backend'den "ORDER BY id DESC" gelse bile anlık eklemede en başa koyuyoruz
         setTasks(prev => [saved, ...prev]);
         setInput('');
         setAdding(false);
@@ -142,6 +148,10 @@ const TodoList = ({ accent = '#60a5fa' }) => {
       });
       if (response.ok) {
         setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+        // Eğer tamamlanan görev şu anki aktif görevse, seçimi kaldırabilirsin (isteğe bağlı)
+        if (activeTodo?.id === id && !task.completed) {
+           setActiveTodo(null);
+        }
       }
     } catch (err) { console.error(err); }
   };
@@ -152,11 +162,12 @@ const TodoList = ({ accent = '#60a5fa' }) => {
       const response = await fetch(`http://localhost:5000/todos/${id}`, { method: 'DELETE' });
       if (response.ok) {
         setTasks(prev => prev.filter(t => t.id !== id));
+        if (activeTodo?.id === id) setActiveTodo(null);
       }
     } catch (err) { console.error(err); }
   };
 
-  // Filtreleme ve Arama Mantığı (Birleştirildi)
+  // Filtreleme ve Arama Mantığı
   const filtered = (filter === 'all' 
     ? tasks 
     : filter === 'done' 
@@ -278,7 +289,14 @@ const TodoList = ({ accent = '#60a5fa' }) => {
           )}
           {filtered.map(t => (
             <div key={t.id} style={{ animation: 'slideIn .25s' }}>
-              <TaskItem task={t} onToggle={toggleTask} onDelete={deleteTask} accent={accent} />
+              <TaskItem 
+                task={t} 
+                onToggle={toggleTask} 
+                onDelete={deleteTask} 
+                accent={accent}
+                isActive={activeTodo?.id === t.id}
+                onSelect={setActiveTodo}
+              />
             </div>
           ))}
         </div>

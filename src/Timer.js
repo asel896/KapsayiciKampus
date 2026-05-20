@@ -114,7 +114,6 @@ const SidebarItem = ({ id, active, onClick, icon, label, accent }) => (
   </div>
 );
 
-/* gradient-filled range track */
 const VolumeSlider = ({ value, onChange, accent }) => (
   <input
     type="range" min={0} max={100} step={1} value={value}
@@ -127,7 +126,6 @@ const VolumeSlider = ({ value, onChange, accent }) => (
   />
 );
 
-/* stat card shown above clock */
 const StatWidget = ({ icon, label, value, sub, color }) => (
   <div style={{
     flex: 1, minWidth: 110,
@@ -148,7 +146,6 @@ const StatWidget = ({ icon, label, value, sub, color }) => (
   </div>
 );
 
-/* single sound option row */
 const SoundCard = ({ option, selected, onSelect, onPreview }) => (
   <div
     onClick={() => onSelect(option.value)}
@@ -190,7 +187,8 @@ const SoundCard = ({ option, selected, onSelect, onPreview }) => (
 );
 
 /* ─── MAIN COMPONENT ─────────────────────────────────────────── */
-const Timer = () => {
+// EKLEME: activeTodo parametresi eklendi
+const Timer = ({ activeTodo }) => {
   const [settings, setSettings] = useState({
     pomodoro: 60, short: 5, long: 15,
     autoCycle: true, cycleBeforeLong: 4,
@@ -201,12 +199,12 @@ const Timer = () => {
     notifVolume:  50,
   });
 
-  const [mode,     setMode]     = useState('pomodoro');
-  const [minutes,  setMinutes]  = useState(60);
-  const [seconds,  setSeconds]  = useState(0);
+  const [mode,      setMode]     = useState('pomodoro');
+  const [minutes,   setMinutes]  = useState(60);
+  const [seconds,   setSeconds]  = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [pomodoroCount, setPomodoroCount] = useState(0);
-  const [cyclePos,      setCyclePos]      = useState(1);
+  const [cyclePos,       setCyclePos]      = useState(1);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeTab,      setActiveTab]      = useState('tema');
@@ -270,7 +268,6 @@ const Timer = () => {
       next = 'pomodoro';
     }
     
-    // Otomatik döngü açıksa bir sonraki modu başlat
     if (settingsRef.current.autoCycle) {
       setIsActive(true);
     }
@@ -294,7 +291,6 @@ const Timer = () => {
         setSeconds(0);
         playNotif();
 
-        // Eğer otomatik döngü kapalıysa durdur, açıksa advanceMode içindeki setIsActive devam ettirecek
         if (!settingsRef.current.autoCycle) {
           setIsActive(false);
         }
@@ -303,8 +299,7 @@ const Timer = () => {
     return () => clearInterval(tickRef.current);
   }, [isActive, advanceMode, playAlarm, playNotif]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (!isActive) { setMinutes(settings[mode]); setSeconds(0); } }, [settings.pomodoro, settings.short, settings.long]);
+  useEffect(() => { if (!isActive) { setMinutes(settings[mode]); setSeconds(0); } }, [settings.pomodoro, settings.short, settings.long, mode, settings, isActive]);
 
   const switchMode = m => { clearInterval(tickRef.current); setIsActive(false); setMode(m); setMinutes(settings[m]); setSeconds(0); };
   const resetTimer = () => { clearInterval(tickRef.current); setIsActive(false); setMinutes(settings[mode]); setSeconds(0); };
@@ -332,10 +327,8 @@ const Timer = () => {
   };
   const handleLogout = () => { setUser(null); setAuthForm({ firstName: '', lastName: '', email: '', password: '' }); setAuthMode('login'); };
 
-  /* ── SETTINGS TAB CONTENT ── */
   const renderTab = () => {
     switch (activeTab) {
-
       case 'tema':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -382,8 +375,6 @@ const Timer = () => {
       case 'ses':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
-
-            {/* alarm */}
             <section>
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                 Alarm sesi
@@ -405,10 +396,7 @@ const Timer = () => {
                 <VolumeSlider value={S.alarmVolume} onChange={v => setSettings(s => ({ ...s, alarmVolume: v }))} accent={accent} />
               </div>
             </section>
-
             <div style={{ height: '0.5px', background: 'rgba(255,255,255,0.07)' }} />
-
-            {/* bildirim */}
             <section>
               <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                 Bildirim sesi (mod geçişi)
@@ -452,7 +440,7 @@ const Timer = () => {
                 <AuthInput placeholder="Soyisim" value={authForm.lastName}  onChange={e => setAuthForm(f => ({ ...f, lastName:  e.target.value }))} />
               </div>
             )}
-            <AuthInput type="email"    placeholder="E-posta"               value={authForm.email}    onChange={e => setAuthForm(f => ({ ...f, email:    e.target.value }))} />
+            <AuthInput type="email"    placeholder="E-posta"                value={authForm.email}    onChange={e => setAuthForm(f => ({ ...f, email:    e.target.value }))} />
             <AuthInput type="password" placeholder="Şifre (min 6 karakter)" value={authForm.password} onChange={e => setAuthForm(f => ({ ...f, password: e.target.value }))} />
             <button onClick={handleAuth} style={{ width: '100%', padding: 13, borderRadius: 10, border: 'none', cursor: 'pointer', background: accent, color: '#000', fontSize: 14, fontWeight: 600, marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               {authMode === 'login' ? <><LogIn size={16} /> Giriş Yap</> : <><UserPlus size={16} /> Kaydol</>}
@@ -465,19 +453,17 @@ const Timer = () => {
             </p>
           </div>
         );
-
       default: return null;
     }
   };
 
   const SIDEBAR_ITEMS = [
-    { id: 'tema',  label: 'Görünüm',     icon: <Globe   size={16} /> },
+    { id: 'tema',   label: 'Görünüm',     icon: <Globe   size={16} /> },
     { id: 'zaman', label: 'Zamanlayıcı', icon: <Clock   size={16} /> },
-    { id: 'ses',   label: 'Sesler',      icon: <Volume2 size={16} /> },
+    { id: 'ses',    label: 'Sesler',      icon: <Volume2 size={16} /> },
     { id: 'hesap', label: 'Hesap',       icon: <User    size={16} /> },
   ];
 
-  /* ── RENDER ── */
   return (
     <>
       <style>{`
@@ -488,17 +474,20 @@ const Timer = () => {
         input[type=number]::-webkit-outer-spin-button { opacity: 1; }
         input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 2px; outline: none; cursor: pointer; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; cursor: pointer; border: 2px solid var(--accent); }
-        input[type=range]::-moz-range-thumb    { width: 14px; height: 14px; border-radius: 50%; background: #fff; cursor: pointer; border: 2px solid var(--accent); }
+        input[type=range]::-moz-range-thumb     { width: 14px; height: 14px; border-radius: 50%; background: #fff; cursor: pointer; border: 2px solid var(--accent); }
         .mode-btn { transition: background .2s, color .2s; }
         .mode-btn:hover { opacity: .85; }
         .main-btn:hover { opacity: .85; transform: scale(1.02); }
         .main-btn:active { transform: scale(.98); }
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
 
       <audio ref={alarmRef} />
       <audio ref={notifRef} />
 
-      {/* PAGE */}
       <div style={{
         minHeight: '100vh', background: '#0c0c0f',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -515,13 +504,29 @@ const Timer = () => {
           <StatWidget
             icon={<Repeat size={12} />} label="Set" color={accent}
             value={`${cyclePos} / ${S.cycleBeforeLong}`}
-            sub={`${S.cycleBeforeLong - cyclePos + (cyclePos <= S.cycleBeforeLong ? 0 : 0)} set kaldı`}
+            sub={`${S.cycleBeforeLong - cyclePos} set kaldı`}
           />
           {user && (
             <StatWidget
               icon={<User size={12} />} label="Kullanıcı" color="#63eba0"
               value={user.name} sub={user.email}
             />
+          )}
+        </div>
+
+        {/* EKLEME: AKTİF GÖREV GÖRÜNÜMÜ */}
+        <div style={{ height: '50px', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {activeTodo && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              background: 'rgba(255, 255, 255, 0.05)', padding: '8px 22px', borderRadius: '100px',
+              border: `1px solid ${accent}44`, color: '#fff', fontSize: '13px', fontWeight: '500',
+              animation: 'fadeInDown 0.4s ease-out', backdropFilter: 'blur(10px)'
+            }}>
+              <span style={{ fontSize: '16px' }}>🎯</span>
+              <span style={{ opacity: 0.6 }}>Odaklanılan:</span>
+              <span style={{ fontWeight: '700', color: accent }}>{activeTodo.text}</span>
+            </div>
           )}
         </div>
 
@@ -576,16 +581,12 @@ const Timer = () => {
       {isSettingsOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
           <div style={{ background: '#111114', width: 'min(92vw, 600px)', borderRadius: 24, border: '0.5px solid rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', maxHeight: '85vh' }}>
-
-            {/* sidebar */}
             <div style={{ width: 180, minWidth: 180, padding: '24px 12px', borderRight: '0.5px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: 4 }}>
               {SIDEBAR_ITEMS.map(item => (
                 <SidebarItem key={item.id} id={item.id} active={activeTab === item.id}
                   onClick={setActiveTab} icon={item.icon} label={item.label} accent={accent} />
               ))}
             </div>
-
-            {/* body */}
             <div style={{ flex: 1, padding: 28, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>
@@ -595,9 +596,7 @@ const Timer = () => {
                   <X size={14} />
                 </button>
               </div>
-
               <div style={{ flex: 1 }}>{renderTab()}</div>
-
               <button onClick={() => { setIsSettingsOpen(false); resetTimer(); }} style={{ width: '100%', padding: 13, borderRadius: 50, border: 'none', cursor: 'pointer', background: accent, color: '#000', fontSize: 14, fontWeight: 600, marginTop: 24, transition: 'opacity .2s' }}>
                 Kaydet ve kapat
               </button>
