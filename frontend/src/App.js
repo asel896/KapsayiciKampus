@@ -1,19 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Timer from './Timer';
 import FriendList from './FriendList';
 import TodoList from './TodoList';
 import MusicPlayer from './MusicPlayer';
 import BackgroundSelector from './BackgroundSelector';
-import { Menu, X } from 'lucide-react';
+import Auth from './Auth'; 
+import { Menu, X, LogOut } from 'lucide-react';
 import logo from './logo.png'; 
 
 function App() {
   const [notification, setNotification] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [bgImage, setBgImage] = useState('https://images.unsplash.com/photo-1517816743773-6e0fd518b4a6?auto=format&fit=crop&q=80&w=1920');
-  
-  // EKSİK OLAN KISIM: Aktif görevi takip eden state
   const [activeTodo, setActiveTodo] = useState(null);
+  
+ 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   const handleSendMessage = (name) => {
     setNotification(`${name} kişisine motive edici bir mesaj gönderildi! 🚀`);
@@ -27,6 +36,19 @@ function App() {
       setBgImage(url);
     };
   };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    setIsAuthenticated(false);
+    setIsMenuOpen(false);
+  };
+
+ 
+  if (!isAuthenticated) {
+    return <Auth onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
+
 
   return (
     <div style={{
@@ -51,6 +73,19 @@ function App() {
         <Menu size={28} />
       </button>
 
+      {/* SAĞ ÜST ÇIKIŞ YAP BUTONU */}
+      <button 
+        onClick={handleLogout}
+        style={{ 
+          position: 'absolute', top: '30px', right: '30px', 
+          background: 'rgba(248,113,113,0.15)', border: '1px solid rgba(248,113,113,0.3)', 
+          padding: '12px', borderRadius: '15px', cursor: 'pointer', color: '#f87171', zIndex: 10,
+          display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600
+        }}
+      >
+        <LogOut size={18} /> Çıkış Yap
+      </button>
+
       {/* SOL YAN PANEL */}
       <div style={{
         position: 'fixed', top: 0, left: isMenuOpen ? '0' : '-450px',
@@ -60,7 +95,6 @@ function App() {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-             {/* Logo hatası almamak için src kontrolü önemli */}
              <img src={logo} alt="Logo" style={{ width: '30px', height: '30px' }} />
              <h2 style={{ margin: 0 }}>kampüs<span style={{color: '#a855f7'}}>paneli</span></h2>
           </div>
@@ -69,7 +103,6 @@ function App() {
           </button>
         </div>
 
-        {/* GÜNCELLEME: TodoList'e props'ları gönderiyoruz */}
         <TodoList 
           activeTodo={activeTodo} 
           setActiveTodo={setActiveTodo} 
@@ -85,7 +118,7 @@ function App() {
         <div style={{ fontSize: '1.2rem', fontWeight: '300', marginBottom: '10px', opacity: 0.7, letterSpacing: '4px' }}>
           KAPSAYICI KAMPÜS
         </div>
-        {/* GÜNCELLEME: Timer'a (Pomodoro) aktif görevi gönderiyoruz */}
+    
         <Timer activeTodo={activeTodo} />
       </div>
 
