@@ -1,0 +1,154 @@
+.settings-page {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* TOGGLE */
+.toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.toggle-btn {
+  width: 52px;
+  height: 28px;
+  border-radius: 999px;
+  border: none;
+  position: relative;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.dot {
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  transition: 0.25s;
+}
+
+.dot.left { left: 3px; }
+.dot.right { left: 27px; }
+
+/* SLIDER */
+.slider {
+  margin-bottom: 24px;
+}
+
+.slider-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.slider-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+}
+
+.slider-fill {
+  height: 100%;
+  border-radius: 999px;
+  position: absolute;
+}
+
+.slider input {
+  position: absolute;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* SCENES */
+.scene-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.scene-card {
+  position: relative;
+  padding: 20px 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+  transition: 0.3s;
+  min-height: 120px;
+}
+
+.scene-card:hover {
+  transform: translateY(-6px);
+}
+
+.scene-card.selected {
+  box-shadow: 0 0 30px rgba(255,255,255,0.2);
+}
+
+.scene-glow {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  filter: blur(50px);
+  opacity: 0.2;
+}
+
+.scene-name {
+  font-size: 12px;
+  margin-top: 8px;
+  font-weight: 700;
+}
+
+/* BUTTONS */
+.save-btn,
+.action-btn,
+.danger-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  border: none;
+  border-radius: 14px;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.save-btn,
+.action-btn {
+  background: var(--accent, #5a7dbf);
+}
+
+.danger-btn {
+  background: #ef4444;
+}
+
+/* BACKGROUND */
+.bg-preview {
+  margin-top: 20px;
+}
+
+.bg-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.bg-image {
+  height: 180px;
+  border-radius: 18px;
+  background-size: cover;
+  background-position: center;
+}
